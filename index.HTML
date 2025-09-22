@@ -1,0 +1,820 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCS51单片机最小系统仿真训练</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c5aa0);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto 0;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            padding: 30px 20px 0;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        header h1 {
+            font-size: 28px;
+            color: #1a2a6c;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .main-content {
+            display: flex;
+            min-height: 550px;
+        }
+        
+        /* 左侧组件面板 */
+        .components-panel {
+            width: 280px;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-right: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .panel-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        .component {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            cursor: grab;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .component:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.12);
+        }
+        
+        .component.dragging {
+            opacity: 0.6;
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .component-icon {
+            width: 60px;
+            height: 60px;
+            min-width: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 28px;
+            color: white;
+        }
+        
+        .vcc .component-icon { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .gnd .component-icon { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .crystal .component-icon { background: linear-gradient(135deg, #fa709a, #fee140); }
+        .reset .component-icon { background: linear-gradient(135deg, #30cfd0, #330867); }
+        
+        .component-info h3 {
+            font-size: 18px;
+            color: #212529;
+            margin-bottom: 5px;
+        }
+        
+        .component-info p {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        /* 中间单片机区域 */
+        .chip-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 30px;
+        }
+        
+        .chip-container {
+            background: #1e2329;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            transform-style: preserve-3d;
+        }
+        
+        .chip {
+            width: 200px;
+            height: 520px;
+            background: linear-gradient(145deg, #2a2d3a, #1a1d25);
+            border-radius: 8px;
+            box-shadow: 
+                inset 0 0 25px rgba(0,0,0,0.5),
+                0 10px 25px rgba(0,0,0,0.3);
+            padding: 25px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+        
+        .chip-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e9ecef;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.1);
+        }
+        
+        /* 芯片引脚区域 */
+        .pins-layout {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            position: relative;
+            height: 380px;
+        }
+        
+        .pins-column {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            position: relative;
+            width: 80px;
+        }
+        
+        .pins-column.left {
+            align-items: flex-start;
+        }
+        
+        .pins-column.right {
+            align-items: flex-end;
+        }
+        
+        /* 引脚组 */
+        .pin-group {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 60px;
+            margin: 12px 0;
+        }
+        
+        /* 引脚标签 */
+        .pin-label {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-120%);
+            background: rgba(52, 58, 64, 0.9);
+            color: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 20;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .pin-label.right {
+            transform: translateX(60%);
+        }
+        
+        /* 放置目标（虚线框） */
+        .drop-zone {
+            width: 20px;
+            height: 20px;
+            border: 2px dashed #adb5bd;
+            border-radius: 50%;
+            position: relative;
+            z-index: 5;
+            transition: all 0.3s ease;
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .drop-zone.active {
+            border-style: solid;
+            border-color: #3498db;
+            background-color: rgba(52, 152, 219, 0.2);
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.6);
+        }
+        
+        .drop-zone.connected {
+            border-style: solid;
+            border-color: #2ecc71;
+            background-color: rgba(46, 204, 113, 0.3);
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(46, 204, 113, 0.7);
+        }
+        
+        .drop-zone.connected::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #2ecc71;
+            font-size: 12px;
+            text-shadow: 0 0 3px rgba(0,0,0,0.5);
+        }
+        
+        /* 引脚编号 */
+        .pin-number {
+            position: absolute;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #6c757d;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .pin-right .pin-number {
+            left: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* 右侧反馈面板 */
+        .feedback-panel {
+            width: 300px;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-left: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .status-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #495057;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        .status-list {
+            list-style: none;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .status-item.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-item.connected {
+            background: #d4edda;
+            color: #155724;
+            transform: translateX(5px);
+        }
+        
+        .status-icon {
+            font-size: 18px;
+        }
+        
+        .status-item.pending .status-icon {
+            color: #ffc107;
+        }
+        
+        .status-item.connected .status-icon {
+            color: #28a745;
+        }
+        
+        .feedback-message {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message-success { color: #28a745; }
+        .message-error { color: #dc3545; }
+        
+        .message-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 页脚 */
+        footer {
+            background-color: #1a2a6c;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            margin-top: auto;
+        }
+        
+        footer a {
+            color: #a5b4fc;
+            text-decoration: none;
+        }
+        
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-microchip"></i> MCS51单片机最小系统仿真训练</h1>
+            <p>将左侧组件拖拽到芯片上的对应引脚区域完成连接</p>
+        </header>
+        
+        <div class="main-content">
+            <!-- 左侧组件面板 -->
+            <div class="components-panel">
+                <h2 class="panel-title"><i class="fas fa-toolbox"></i> 基础组件</h2>
+                
+                <div class="component vcc" draggable="true" data-component="vcc">
+                    <div class="component-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="component-info">
+                        <h3>电源电路</h3>
+                        <p>提供稳定工作电压 (VCC)</p>
+                    </div>
+                </div>
+                
+                <div class="component gnd" draggable="true" data-component="gnd">
+                    <div class="component-icon"><i class="fas fa-plug"></i></div>
+                    <div class="component-info">
+                        <h3>接地电路</h3>
+                        <p>提供公共参考点 (GND)</p>
+                    </div>
+                </div>
+                
+                <div class="component crystal" draggable="true" data-component="crystal">
+                    <div class="component-icon"><i class="fas fa-gem"></i></div>
+                    <div class="component-info">
+                        <h3>晶振电路</h3>
+                        <p>提供系统时钟信号</p>
+                    </div>
+                </div>
+                
+                <div class="component reset" draggable="true" data-component="reset">
+                    <div class="component-icon"><i class="fas fa-redo"></i></div>
+                    <div class="component-info">
+                        <h3>复位电路</h3>
+                        <p>使单片机初始化或重新启动</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 中间单片机区域 -->
+            <div class="chip-area">
+                <div class="chip-container">
+                    <div class="chip" id="chip">
+                        <h1 class="chip-title">MCS-51</h1>
+                        
+                        <div class="pins-layout">
+                            <!-- 左侧引脚区域 -->
+                            <div class="pins-column left">
+                                <!-- RST (9) -->
+                                <div class="pin-group">
+                                    <span class="pin-number">9</span>
+                                    <span class="pin-label">RST</span>
+                                    <div class="drop-zone" data-pin="pin9" data-required-component="reset"></div>
+                                </div>
+                                
+                                <!-- XTAL1 (18) -->
+                                <div class="pin-group">
+                                    <span class="pin-number">18</span>
+                                    <span class="pin-label">XTAL1</span>
+                                    <div class="drop-zone" data-pin="pin18" data-required-component="crystal"></div>
+                                </div>
+                                
+                                <!-- XTAL2 (19) -->
+                                <div class="pin-group">
+                                    <span class="pin-number">19</span>
+                                    <span class="pin-label">XTAL2</span>
+                                    <div class="drop-zone" data-pin="pin19" data-required-component="crystal"></div>
+                                </div>
+                                
+                                <!-- GND (20) -->
+                                <div class="pin-group">
+                                    <span class="pin-number">20</span>
+                                    <span class="pin-label">GND</span>
+                                    <div class="drop-zone" data-pin="pin20" data-required-component="gnd"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 右侧引脚区域 -->
+                            <div class="pins-column right">
+           		 <!-- VCC (40) -->
+                                <div class="pin-group pin-right">
+                                    <span class="pin-number">40</span>
+                                    <span class="pin-label right">VCC</span>
+                                    <div class="drop-zone" data-pin="pin40" data-required-component="vcc"></div>
+                                </div>
+		<!-- /EA (31) -->
+                                <div class="pin-group pin-right">
+                                    <span class="pin-number">31</span>
+                                    <span class="pin-label right">/EA</span>
+                                    <div class="drop-zone" data-pin="pin31" data-required-component="vcc"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧反馈面板 -->
+            <div class="feedback-panel">
+                <div class="status-card">
+                    <h3 class="status-title"><i class="fas fa-tasks"></i> 连接状态</h3>
+                    <ul class="status-list" id="status-list">
+                        <li class="status-item pending" id="pin9-status">
+                            <span>RST (Pin9)</span>
+                            <i class="fas fa-exclamation-circle status-icon"></i>
+                        </li>
+                        <li class="status-item pending" id="pin18-status">
+                            <span>XTAL1 (Pin18)</span>
+                            <i class="fas fa-exclamation-circle status-icon"></i>
+                        </li>
+                        <li class="status-item pending" id="pin19-status">
+                            <span>XTAL2 (Pin19)</span>
+                            <i class="fas fa-exclamation-circle status-icon"></i>
+                        </li>
+                        <li class="status-item pending" id="pin20-status">
+                            <span>GND (Pin20)</span>
+                            <i class="fas fa-exclamation-circle status-icon"></i>
+                        </li>
+                        <li class="status-item pending" id="pin31-status">
+                            <span>/EA (Pin31)</span>
+                            <i class="fas fa-exclamation-circle status-icon"></i>
+                        </li>
+                        <li class="status-item pending" id="pin40-status">
+                            <span>VCC (Pin40)</span>
+                            <i class="fas fa-exclamation-circle status-icon"></i>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="feedback-message" id="feedback">
+                    <i class="fas fa-info-circle message-icon" style="color: #3498db;"></i>
+                    <p>请从左侧拖拽组件到芯片上对应的引脚区域</p>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-secondary" id="reset-btn">
+                        <i class="fas fa-undo"></i> 重置
+                    </button>
+                    <button class="btn btn-primary" id="check-btn">
+                        <i class="fas fa-check-double"></i> 检查系统
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        洛阳理工学院 电子信息学院出品 | 建议反馈：<a href="mailto:limeng@lit.edu.cn">limeng@lit.edu.cn</a>
+    </footer>
+    
+    <script>
+        // 状态管理
+        const connectionStatus = {
+            pin9: { connected: false, element: null },
+            pin18: { connected: false, element: null },
+            pin19: { connected: false, element: null },
+            pin20: { connected: false, element: null },
+            pin31: { connected: false, element: null },
+            pin40: { connected: false, element: null }
+        };
+        
+        const requiredConnections = {
+            pin9: { component: 'reset', name: 'RST' },
+            pin18: { component: 'crystal', name: 'XTAL1' },
+            pin19: { component: 'crystal', name: 'XTAL2' },
+            pin20: { component: 'gnd', name: 'GND' },
+            pin31: { component: 'vcc', name: '/EA' },
+            pin40: { component: 'vcc', name: 'VCC' }
+        };
+        
+        // 初始化拖拽功能
+        document.querySelectorAll('.component').forEach(component => {
+            component.addEventListener('dragstart', handleDragStart);
+            component.addEventListener('dragend', handleDragEnd);
+        });
+        
+        // 初始化放置区域的事件委托
+        const chip = document.getElementById('chip');
+        chip.addEventListener('dragover', handleDragOver);
+        chip.addEventListener('drop', handleDrop);
+
+        // 按钮事件
+        document.getElementById('reset-btn').addEventListener('click', resetSimulation);
+        document.getElementById('check-btn').addEventListener('click', checkConnections);
+        
+        // 拖拽开始
+        function handleDragStart(e) {
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('component-type', e.target.dataset.component);
+        }
+        
+        // 拖拽结束
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+        
+        // 拖拽经过芯片
+        function handleDragOver(e) {
+            e.preventDefault(); // 必须
+            e.dataTransfer.dropEffect = 'move';
+            
+            const targetElement = e.target;
+            const dropZone = findParentDropZone(targetElement);
+
+            if (dropZone) {
+                // 先清除其他所有可能 active 的状态
+                document.querySelectorAll('.drop-zone.active').forEach(zone => {
+                    if (zone !== dropZone) {
+                        zone.classList.remove('active');
+                    }
+                });
+                dropZone.classList.add('active');
+            } else {
+                // 如果鼠标不在任何drop-zone上，清除所有active
+                document.querySelectorAll('.drop-zone.active').forEach(zone => {
+                    zone.classList.remove('active');
+                });
+            }
+            return false;
+        }
+        
+        // 放置处理
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            e.preventDefault();
+            
+            const draggedComponentType = e.dataTransfer.getData('component-type');
+            const targetElement = e.target;
+            const dropZone = findParentDropZone(targetElement);
+            
+            if (!dropZone) return false;
+
+            dropZone.classList.remove('active'); // 移除悬停状态
+            
+            const requiredComponent = dropZone.dataset.requiredComponent;
+            const pinId = dropZone.dataset.pin;
+            const connection = connectionStatus[pinId];
+            
+            if (draggedComponentType === requiredComponent) {
+                if (!connection.connected) {
+                    connection.connected = true;
+                    connection.element = dropZone;
+                    dropZone.classList.add('connected');
+                    updateStatus(pinId, true);
+                    showFeedback(`成功连接到 ${requiredConnections[pinId].name}！`, 'success');
+                } else {
+                    showFeedback(`${requiredConnections[pinId].name} 已经连接过了！`, 'info');
+                }
+            } else {
+                showFeedback(`错误：${requiredConnections[pinId].name} 需要组件: ${getComponentName(requiredComponent)}`, 'error');
+            }
+            
+            return false;
+        }
+        
+        // 查找目标元素的父级 drop-zone
+        function findParentDropZone(element) {
+            while (element && element.parentElement) {
+                if (element.classList && element.classList.contains('drop-zone')) {
+                    return element;
+                }
+                element = element.parentElement;
+            }
+            return null;
+        }
+        
+        // 更新状态显示
+        function updateStatus(pinId, isConnected) {
+            const statusItem = document.getElementById(`${pinId}-status`);
+            if (isConnected) {
+                statusItem.className = 'status-item connected';
+                statusItem.querySelector('.status-icon').className = 'fas fa-check-circle status-icon';
+            } else {
+                statusItem.className = 'status-item pending';
+                statusItem.querySelector('.status-icon').className = 'fas fa-exclamation-circle status-icon';
+            }
+        }
+        
+        // 检查所有连接
+        function checkConnections() {
+            const allConnected = Object.values(connectionStatus).every(status => status.connected);
+            
+            if (allConnected) {
+                showFeedback('🎉 恭喜！所有核心连接正确，MCS51最小系统已成功构建！', 'success');
+                
+                // 添加成功动画
+                document.querySelectorAll('.drop-zone.connected').forEach((zone, index) => {
+                    setTimeout(() => {
+                        zone.style.animation = 'pulse 1s';
+                    }, index * 200);
+                });
+            } else {
+                const missing = Object.entries(requiredConnections)
+                    .filter(([pin]) => !connectionStatus[pin].connected)
+                    .map(([_, con]) => con.name);
+                
+                if (missing.length > 0) {
+                    showFeedback(`❌ 系统不完整！请连接以下引脚: ${missing.join(', ')}`, 'error');
+                }
+            }
+        }
+        
+        // 重置模拟
+        function resetSimulation() {
+            Object.keys(connectionStatus).forEach(pinId => {
+                connectionStatus[pinId].connected = false;
+                connectionStatus[pinId].element = null;
+                updateStatus(pinId, false);
+                
+                // 清除UI上的连接样式
+                const zone = document.querySelector(`[data-pin="${pinId}"]`);
+                if (zone) {
+                    zone.classList.remove('connected', 'active');
+                    zone.style.animation = '';
+                }
+            });
+            
+            // 清除所有active状态
+            document.querySelectorAll('.drop-zone.active').forEach(zone => {
+                zone.classList.remove('active');
+            });
+            
+            showFeedback('模拟系统已重置', 'info');
+        }
+        
+        // 显示反馈信息
+        function showFeedback(message, type) {
+            const feedback = document.getElementById('feedback');
+            let iconClass = 'fa-info-circle';
+            feedback.classList.remove('message-success', 'message-error');
+            
+            if (type === 'success') {
+                iconClass = 'fa-check-circle';
+                feedback.classList.add('message-success');
+            } else if (type === 'error') {
+                iconClass = 'fa-times-circle';
+                feedback.classList.add('message-error');
+            }
+
+            feedback.innerHTML = `
+                <i class="fas ${iconClass} message-icon"></i>
+                <p>${message}</p>
+            `;
+        }
+        
+        // 获取组件名称
+        function getComponentName(component) {
+            const names = {
+                'vcc': '电源电路',
+                'gnd': '接地电路',
+                'crystal': '晶振电路',
+                'reset': '复位电路'
+            };
+            return names[component] || component;
+        }
+        
+        // 添加脉冲动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+                70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
