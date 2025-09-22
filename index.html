@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -12,6 +11,8 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Microsoft YaHei', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
         
         body {
@@ -20,6 +21,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
         }
         
         .container {
@@ -53,6 +55,7 @@
         .main-content {
             display: flex;
             min-height: 550px;
+            flex-wrap: wrap;
         }
         
         /* 左侧组件面板 */
@@ -90,6 +93,8 @@
             display: flex;
             align-items: center;
             gap: 15px;
+            user-select: none;
+            -webkit-user-select: none;
         }
         
         .component:hover {
@@ -101,6 +106,12 @@
             opacity: 0.6;
             transform: translateY(-5px) scale(1.05);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .component.touch-selected {
+            transform: scale(1.05);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+            border: 2px solid #3498db;
         }
         
         .component-icon {
@@ -138,6 +149,7 @@
             justify-content: center;
             align-items: center;
             padding: 0 30px;
+            min-width: 300px;
         }
         
         .chip-container {
@@ -146,6 +158,7 @@
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
             padding: 30px;
             transform-style: preserve-3d;
+            max-width: 100%;
         }
         
         .chip {
@@ -239,6 +252,7 @@
             z-index: 5;
             transition: all 0.3s ease;
             background-color: rgba(255,255,255,0.05);
+            cursor: pointer;
         }
 
         .drop-zone.active {
@@ -438,6 +452,154 @@
         footer a:hover {
             text-decoration: underline;
         }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .components-panel, .feedback-panel {
+                width: 100%;
+                margin: 0 0 20px 0;
+            }
+            
+            .chip-area {
+                order: -1;
+                margin-bottom: 20px;
+                padding: 0;
+            }
+            
+            .chip-container {
+                width: 100%;
+                padding: 15px;
+            }
+            
+            .chip {
+                width: 100%;
+                max-width: 300px;
+                height: 400px;
+                margin: 0 auto;
+            }
+            
+            .pins-layout {
+                height: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px 10px 0;
+                border-radius: 15px 15px 0 0;
+            }
+            
+            header h1 {
+                font-size: 22px;
+            }
+            
+            header p {
+                font-size: 14px;
+            }
+            
+            .components-panel, .feedback-panel {
+                padding: 15px;
+            }
+            
+            .component {
+                padding: 15px;
+            }
+            
+            .component-icon {
+                width: 50px;
+                height: 50px;
+                min-width: 50px;
+                font-size: 24px;
+            }
+            
+            .chip {
+                height: 350px;
+                padding: 15px 10px;
+            }
+            
+            .chip-title {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .pins-layout {
+                height: 250px;
+            }
+            
+            .pin-group {
+                height: 50px;
+                margin: 8px 0;
+            }
+            
+            .pin-label {
+                font-size: 10px;
+                padding: 3px 6px;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chip {
+                height: 300px;
+            }
+            
+            .pins-layout {
+                height: 220px;
+            }
+            
+            .pin-group {
+                margin: 5px 0;
+            }
+            
+            .pin-number {
+                font-size: 10px;
+                top: -20px;
+            }
+            
+            .pin-right .pin-number {
+                left: -20px;
+            }
+            
+            .component-info h3 {
+                font-size: 16px;
+            }
+            
+            .component-info p {
+                font-size: 12px;
+            }
+        }
+
+        /* 触摸设备特定样式 */
+        .touch-device .component {
+            cursor: pointer;
+        }
+
+        /* 组件选择提示 */
+        .selection-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            z-index: 1000;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .touch-device .selection-hint {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -591,11 +753,22 @@
             </div>
         </div>
     </div>
+
+    <div class="selection-hint" id="selection-hint">
+        已选择组件，请点击目标引脚进行连接
+    </div>
+
     <footer>
         洛阳理工学院 电子信息学院出品 | 建议反馈：<a href="mailto:limeng@lit.edu.cn">limeng@lit.edu.cn</a>
     </footer>
     
     <script>
+        // 检测是否为触摸设备
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isTouchDevice) {
+            document.body.classList.add('touch-device');
+        }
+
         // 状态管理
         const connectionStatus = {
             pin9: { connected: false, element: null },
@@ -614,17 +787,34 @@
             pin31: { component: 'vcc', name: '/EA' },
             pin40: { component: 'vcc', name: 'VCC' }
         };
+
+        // 当前选择的组件（用于触摸设备）
+        let selectedComponent = null;
+        const selectionHint = document.getElementById('selection-hint');
         
         // 初始化拖拽功能
         document.querySelectorAll('.component').forEach(component => {
             component.addEventListener('dragstart', handleDragStart);
             component.addEventListener('dragend', handleDragEnd);
+            
+            // 添加触摸事件支持
+            if (isTouchDevice) {
+                component.addEventListener('touchstart', handleTouchStart, { passive: false });
+                component.addEventListener('touchend', handleTouchEnd);
+            }
         });
         
         // 初始化放置区域的事件委托
         const chip = document.getElementById('chip');
         chip.addEventListener('dragover', handleDragOver);
         chip.addEventListener('drop', handleDrop);
+
+        // 为触摸设备添加放置区域点击事件
+        if (isTouchDevice) {
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.addEventListener('click', handleTouchDrop);
+            });
+        }
 
         // 按钮事件
         document.getElementById('reset-btn').addEventListener('click', resetSimulation);
@@ -640,6 +830,68 @@
         // 拖拽结束
         function handleDragEnd(e) {
             e.target.classList.remove('dragging');
+        }
+        
+        // 触摸开始
+        function handleTouchStart(e) {
+            // 阻止默认行为以防止滚动和缩放
+            e.preventDefault();
+            
+            const component = e.currentTarget;
+            component.classList.add('touch-selected');
+            
+            // 存储选择的组件
+            selectedComponent = component.dataset.component;
+            
+            // 显示提示
+            selectionHint.style.display = 'block';
+            
+            // 高亮所有可以放置的区域
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                if (zone.dataset.requiredComponent === selectedComponent) {
+                    zone.classList.add('active');
+                }
+            });
+        }
+        
+        // 触摸结束
+        function handleTouchEnd(e) {
+            document.querySelectorAll('.component').forEach(comp => {
+                comp.classList.remove('touch-selected');
+            });
+        }
+        
+        // 触摸设备上的放置处理
+        function handleTouchDrop(e) {
+            if (!selectedComponent) return;
+            
+            const dropZone = e.currentTarget;
+            const requiredComponent = dropZone.dataset.requiredComponent;
+            const pinId = dropZone.dataset.pin;
+            const connection = connectionStatus[pinId];
+            
+            if (selectedComponent === requiredComponent) {
+                if (!connection.connected) {
+                    connection.connected = true;
+                    connection.element = dropZone;
+                    dropZone.classList.add('connected');
+                    updateStatus(pinId, true);
+                    showFeedback(`成功连接到 ${requiredConnections[pinId].name}！`, 'success');
+                } else {
+                    showFeedback(`${requiredConnections[pinId].name} 已经连接过了！`, 'info');
+                }
+            } else {
+                showFeedback(`错误：${requiredConnections[pinId].name} 需要组件: ${getComponentName(requiredComponent)}`, 'error');
+            }
+            
+            // 重置选择
+            selectedComponent = null;
+            selectionHint.style.display = 'none';
+            
+            // 移除所有高亮
+            document.querySelectorAll('.drop-zone.active').forEach(zone => {
+                zone.classList.remove('active');
+            });
         }
         
         // 拖拽经过芯片
@@ -771,6 +1023,15 @@
                 zone.classList.remove('active');
             });
             
+            // 清除触摸设备的选择状态
+            if (isTouchDevice) {
+                selectedComponent = null;
+                selectionHint.style.display = 'none';
+                document.querySelectorAll('.component').forEach(comp => {
+                    comp.classList.remove('touch-selected');
+                });
+            }
+            
             showFeedback('模拟系统已重置', 'info');
         }
         
@@ -817,5 +1078,4 @@
         document.head.appendChild(style);
     </script>
 </body>
-
 </html>
